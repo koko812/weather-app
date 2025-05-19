@@ -1,12 +1,50 @@
-# React + Vite
+# 🌍 Weather Map Viewer v1.0
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+このアプリは、React + Vite + Leaflet を使用して作成された、**世界地図上で任意の場所を探索できるビューア**です。v1.0 では、まず地図の描画を成功させることを目標としました。
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 機能概要（v1.0）
 
-## Expanding the ESLint configuration
+* 世界地図を表示（OpenStreetMap タイル）
+* ユーザーは地図上を自由にズーム・パン可能
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🛠 技術スタック
+
+* [React](https://reactjs.org/)
+* [Vite](https://vitejs.dev/)
+* [React Leaflet](https://react-leaflet.js.org/)
+* [OpenStreetMap](https://www.openstreetmap.org/)
+
+---
+
+## 📁 ディレクトリ構成（一部）
+
+```
+src/
+├── App.jsx            # 地図を表示するコンポーネント
+├── main.jsx           # アプリエントリーポイント
+└── index.html         # Vite用HTMLテンプレート
+```
+
+---
+
+## 📦 セットアップ手順
+
+```bash
+npm install
+npm run dev
+```
+
+ブラウザで `http://localhost:5173` を開くと地図が表示されます。
+
+---
+
+## 🔮 今後の開発予定
+
+* 地図クリック時に天気情報を取得し、ポップアップ表示
+* 気温ヒートマップや降水レイヤーの表示
+* 検索履歴機能
+* 現在地取得機能
