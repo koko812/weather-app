@@ -13,6 +13,16 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-pane,
+.leaflet-control { z-index: 0 !important; }
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 a {
   font-weight: 500;
   color: #646cff;

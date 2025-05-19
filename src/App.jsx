@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRef } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -6,6 +7,7 @@ import {
   Popup,
   useMapEvents
 } from 'react-leaflet';
+import LocaleButton from './components/LocaleButton';
 
 const API_KEY = import.meta.env.VITE_OWM_API_KEY;
 
@@ -29,25 +31,45 @@ function App() {
   const [weather, setWeather] = useState(null);
   const [position, setPosition] = useState(null);
 
+  const mapRef = useRef(null);
+
+
   return (
-    <MapContainer center={[20, 0]} zoom={2} style={{ height: '100vh', width: '100%' }}>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; OpenStreetMap contributors'
-      />
-      <ClickHandler setWeather={setWeather} setPosition={setPosition} />
-      {position && weather && weather.cod === 200 && (
-        <Marker position={position}>
-          <Popup>
-            <strong>{weather.name || 'Unknown'}</strong><br />
-            {weather.weather[0].main} - {weather.weather[0].description}<br />
-            🌡 {weather.main.temp}°C<br />
-            💧 {weather.main.humidity}%<br />
-            🌬 {weather.wind.speed} m/s
-          </Popup>
-        </Marker>
-      )}
-    </MapContainer>
+    <div style={{ position: 'relative' }}>
+
+      <MapContainer
+        center={[20, 0]}
+        zoom={2}
+        style={{ height: '100vh', width: '100%' }}
+        ref={mapRef} // ✅ ここがポイント！
+        >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors'
+        />
+        <ClickHandler setWeather={setWeather} setPosition={setPosition} />
+        {position && weather && weather.cod === 200 && (
+          <Marker position={position}>
+            <Popup>
+              <div style={{ textAlign: 'center' }}>
+                <strong>{weather.name || 'Unknown'}</strong><br />
+                <img
+                  src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
+                  alt={weather.weather[0].description}
+                  style={{ width: '60px', height: '60px' }}
+                /><br />
+                {weather.weather[0].main} - {weather.weather[0].description}<br />
+                🌡 {weather.main.temp}°C<br />
+                💧 {weather.main.humidity}%<br />
+                🌬 {weather.wind.speed} m/s
+              </div>
+            </Popup>
+          </Marker>
+        )}
+      </MapContainer>
+      <LocaleButton mapRef={mapRef} />
+    </div>
+
   );
 }
 

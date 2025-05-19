@@ -1,3 +1,79 @@
+# 📘 LEARNED.md - Weather Map Viewer v1.3
+
+## 🧠 今回実装した内容（v1.3）
+
+* React-Leaflet v5 環境において、地図インスタンス（map）を取得するための方法を修正
+* `whenCreated` は v5 で廃止されているため、代わりに `ref={mapRef}` を使用して地図インスタンスを取得
+* 現在地ボタン（📍）を地図の右上に自然に配置し、押すと `navigator.geolocation` により現在地にズームイン
+* 地図へのアクセスは `useRef` に格納された `mapRef.current` を通して行う
+* `LocateButton` は `MapContainer` の外に配置し、スタイルや z-index に依存せず自然に表示されるようにした
+
+---
+
+## ❓ このバージョンで浮かんだ疑問とその解消
+
+### Q. `whenCreated` が発火しないのはなぜ？
+
+→ A. `react-leaflet v5` では `whenCreated` が廃止されたため、map インスタンスは `ref` を直接渡すことで取得する必要がある。
+
+### Q. `mapRef.current` が null のままだったのはなぜ？
+
+→ A. `ref` を正しく `MapContainer` に渡していなかった、または描画順の問題により初期化前にアクセスしていたため。
+
+### Q. 現在地ボタンは表示されているのに反応しなかったのは？
+
+→ A. `mapRef.current` が null の状態で `setView()` を呼んでいたため。初期化確認の工夫や disabled による防止策が有効。
+
+---
+
+## ✅ このバージョンで学んだこと（v1.3）
+
+### 1. React-Leaflet v5 の map インスタンス取得方法
+
+* `whenCreated` は廃止されているため、map の取得には `ref` を使う必要がある
+* `useRef(null)` → `<MapContainer ref={mapRef} />` でインスタンスがセットされる
+* `mapRef.current` は初期描画後にのみ有効
+
+### 2. 地図外コンポーネントからの地図操作
+
+* `MapContainer` の外にある `LocateButton` でも、`mapRef.current.setView(...)` により地図の操作が可能
+* `useMap()` は MapContainer の外では使えないためこの構成が最適
+
+### 3. ボタンが表示されない・効かない原因の特定法
+
+* CSS の `zIndex` や `position: relative` の有無
+* ファイル名の typo による import 不一致
+* `console.log()` による段階的な状態確認（lat/lon, ref, map instance）
+
+### 4. バージョンに応じた API 使用法の違い
+
+* ライブラリの major version アップ時には破壊的変更に注意
+* `react-leaflet@5` のドキュメントを再確認し、古い習慣（`whenCreated` など）を見直す
+
+---
+
+## 💪 バグとの戦いから得た知見（v1.3）
+
+* 地図と React の橋渡しには「描画タイミング」と「DOM構造」の正確な理解が必要
+* `ref` ベースの地図制御は見落としがちな一歩であるが、v5では必須手段
+* エラーが出ていないのに動かないときは、ファイル名・レンダリング順・非同期のタイミングを疑え
+
+---
+
+## ✅ 次にやると良さそうなこと（TODO）
+
+* 現在地ボタン押下時に自動で天気も取得して表示する
+* `setWeather` / `setPosition` を `LocateButton` に渡して再利用する
+* 天気 API のレスポンスをキャッシュ or リトライする仕組み
+* LEAFLET コントロールとの統合でボタンを Leaflet UI に完全に組み込む
+
+---
+
+</br>
+</br>
+</br>
+</br>
+</br>
 
 # 📘 LEARNED.md - Weather Map Viewer v1.1
 
