@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -32,7 +32,18 @@ function App() {
   const [position, setPosition] = useState(null);
 
   const mapRef = useRef(null);
+  const markerRef = useRef(null);
 
+  useEffect(() => {
+    if (position && weather && markerRef.current) {
+      // 遅延させることで DOM 確実に描画されたあとに openPopup を呼べる
+      const timeout = setTimeout(() => {
+        markerRef.current.openPopup();
+      }, 0); // ← または 100ms 程度でもOK
+
+      return () => clearTimeout(timeout);
+    }
+  }, [position, weather]);
 
   return (
     <div style={{ position: 'relative' }}>
@@ -42,14 +53,14 @@ function App() {
         zoom={2}
         style={{ height: '100vh', width: '100%' }}
         ref={mapRef} // ✅ ここがポイント！
-        >
+      >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
         />
         <ClickHandler setWeather={setWeather} setPosition={setPosition} />
-        {position && weather && weather.cod === 200 && (
-          <Marker position={position}>
+        {position && weather && (
+          <Marker position={position} ref={markerRef}>
             <Popup>
               <div style={{ textAlign: 'center' }}>
                 <strong>{weather.name || 'Unknown'}</strong><br />
@@ -67,7 +78,12 @@ function App() {
           </Marker>
         )}
       </MapContainer>
-      <LocaleButton mapRef={mapRef} />
+      <LocaleButton
+        mapRef={mapRef}
+        setPosition={setPosition}
+        setWeather={setWeather}
+      />
+
     </div>
 
   );
