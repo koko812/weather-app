@@ -35,8 +35,8 @@ function LocaleButton({ mapRef, setPosition, setWeather, weatherCache }) {
             onClick={handleClick}
             style={{
                 position: "absolute",
-                top: "20px",
-                right: "20px",
+                top: "50px",
+                right: "150px",
                 zIndex: 100000,
                 backgroundColor: "yellow",
                 color: "black",
