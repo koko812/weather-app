@@ -1,3 +1,201 @@
+# 📘 LEARNED.md - Weather Map Viewer v1.6
+
+## 🌏 実装内容（日本の都市の天気表示）
+
+このバージョンでは、日本全国の主要都市（約10地点）に対し、起動時に天気情報を自動取得して地図上にマーカー表示する機能を実装した。OpenWeatherMap API のキャッシュ機構も引き続き有効にし、無駄なリクエストを発生させず、ポップアップで各都市の天気詳細を表示できるようにした。
+
+---
+
+## ✅ 実装詳細
+
+### 1. `cities-japan.js` の作成
+
+* 都市名・緯度・経度のリストを定義し、エクスポートするモジュールとして保存。
+
+```js
+export const cities = [
+  { name: "東京", lat: 35.6895, lon: 139.6917 },
+  { name: "大阪", lat: 34.6937, lon: 135.5023 },
+  ...
+];
+```
+
+### 2. `App.jsx` 側で天気一括取得処理
+
+* 起動時に `useEffect` で都市リストをループし、`fetchWeather()` により天気情報を取得
+* 結果を `cityWeatherList` ステートに配列として格納し、マッピングに活用
+
+```jsx
+const [cityWeatherList, setCityWeatherList] = useState([]);
+
+useEffect(() => {
+  const load = async () => {
+    const results = [];
+    for (const city of cities) {
+      const data = await fetchWeather(city.lat, city.lon, weatherCache);
+      results.push({ ...city, data });
+    }
+    setCityWeatherList(results);
+  };
+  load();
+}, []);
+```
+
+### 3. `<Marker>` の配列レンダリング
+
+* `cityWeatherList.map(...)` で `<Marker>` を生成
+* `<Popup>` 内に天気、湿度、風速、天気アイコンを表示
+
+### 4. 天気アイコンの追加
+
+* OpenWeatherMap のアイコンURL形式に従い `<img>` を表示
+
+```jsx
+<img
+  src={`https://openweathermap.org/img/wn/${city.data.weather[0].icon}@2x.png`}
+  alt={city.data.weather[0].description}
+  style={{ width: '60px', height: '60px' }}
+/>
+```
+
+---
+
+## 🎯 UI/UX 向上の工夫
+
+### ✅ ユーザーがクリックして取得した天気との区別
+
+* `userPinIcon`（赤）と `cityPinIcon`（青）を作成し、アイコン差し替え
+* Leaflet の `L.icon()` を利用：
+
+```js
+export const userPinIcon = L.icon({
+  iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32]
+});
+```
+
+### ✅ ポップアップとピンの重なり解消
+
+* ユーザーが立てたマーカーの `<Popup>` に `offset={[0, -30]}` を設定
+* ポップアップがピンの真上にずれることで、ピンが視認可能に
+
+---
+
+## 🧠 学びと気づき
+
+* React-Leaflet はアイコンのカスタマイズが必要な場合、Leaflet (`L.icon`) の力を借りる必要がある
+* `Popup` の位置調整に `offset` プロパティを使うと UI が崩れにくい
+* 起動時の一括取得は、`fetchWeather()` のキャッシュ機構と組み合わせることで非常に高速に動作
+* `cityWeatherList` のように一覧状態を `useState` にまとめることで `map()` によるマッピング処理が簡潔に書ける
+
+---
+
+## 🚀 今後の展望（v1.7〜）
+
+| バージョン | 拡張案                       |
+| ----- | ------------------------- |
+| v1.7  | 地図移動・ズーム連動で動的に都市を読み込み     |
+| v1.8  | 天気に応じたマーカー色・ポップアップ背景のカスタム |
+| v1.9  | ユーザーの履歴一覧表示・エクスポート機能追加    |
+| v2.0  | 世界全体の主要都市に対応              |
+
+---
+
+## 📆 バージョン履歴
+
+* v1.6: 日本の主要都市の天気を自動表示し、ピンの区別とUI改善を実装。キャッシュ利用・天気アイコンの追加も達成。
+
+</br>
+</br>
+</br>
+</br>
+</br>
+
+# 📘 LEARNED.md - Weather Map Viewer v1.5.1
+
+## 🔍 React Hooks の整理と理解
+
+このセクションでは、React アプリ開発において多用された `Hooks` の意味・種類・使い分け・設計思想について整理する。
+
+---
+
+## ✅ 1. Hook という名前の由来
+
+「Hook（フック）」とは、もともとソフトウェア設計で「処理の途中に差し込む仕組み」を意味する用語。釣り針のように、特定のタイミングで処理を引っかけて実行できるようにする。
+
+React における Hooks も同様で：
+
+> 「関数コンポーネントに\*\*状態（state）や副作用（effect）をフック（引っかける）\*\*するためのAPI群」
+
+がその本質である。
+
+従来は class コンポーネント + ライフサイクルメソッド（`componentDidMount` など）で実現していた機能を、Hooks によって関数ベースで書けるようになった。
+
+---
+
+## 🔧 2. よく使う標準 Hooks とその役割
+
+| フック名              | 主な用途          | 説明                                 |
+| ----------------- | ------------- | ---------------------------------- |
+| `useState`        | 状態管理          | UI に影響するデータを保持し、変更すると再描画される        |
+| `useEffect`       | 副作用処理（初回・更新時） | データ取得や購読登録など。レンダリング後に実行される         |
+| `useRef`          | DOM参照 / 値の保持  | UI に影響を与えずに、レンダリング間で永続する値を保持       |
+| `useMemo`         | 値のメモ化         | 高コストな計算結果を再利用。依存配列が変わらない限り再計算しない   |
+| `useCallback`     | 関数のメモ化        | 同じ関数インスタンスを保持し、再レンダリングでも変わらないように   |
+| `useContext`      | グローバル状態の共有    | コンポーネントツリー間で状態や値を共有                |
+| `useReducer`      | 複雑な状態管理       | `useState` より複雑なロジックに向いた状態遷移       |
+| `useLayoutEffect` | レイアウト確定後に同期実行 | `useEffect` より前に、DOM描画直後に同期的に実行される |
+
+---
+
+## 🧠 3. useRef と `.current` の構造と意図
+
+```js
+const ref = useRef(initialValue); // { current: initialValue }
+```
+
+* `useRef()` が返すオブジェクトは `{ current: 値 }` の形
+* `.current` に代入しても再描画は発生しない（非UI状態）
+* 外部ライブラリのインスタンスやキャッシュ、メモ帳のような用途に最適
+
+### よくある活用例：
+
+| 用途         | 例                               | 説明                      |
+| ---------- | ------------------------------- | ----------------------- |
+| DOMアクセス    | `divRef.current.focus()`        | HTML要素にアクセス             |
+| 外部ライブラリの操作 | `markerRef.current.openPopup()` | Leaflet のインスタンス操作       |
+| 値のキャッシュ保持  | `weatherCache.current.set(...)` | API結果のキャッシュなど、再描画に依存しない |
+
+---
+
+## 🧩 4. カスタムフックはいつ使うのか？
+
+### ✅ 再利用・共通化したいとき
+
+* `useEffect + useState` のパターンを複数箇所で繰り返すとき
+* `useLocalStorage()`, `useGeolocation()` などのようにロジックの意味を明確にしたいとき
+
+### ❌ 一度きりの簡単な処理であれば不要
+
+* 単発の useState や useRef はそのまま直接書く方が明快
+
+---
+
+## 📌 まとめ
+
+* Hook とは「処理に割り込む仕組み」であり、React のレンダリング・副作用・状態に“引っかける”ことでUI構築を支援する
+* `useRef.current` を使えば非UIな値（キャッシュや外部APIインスタンスなど）を安全に保持できる
+* 標準Hooksで事足りる場合も多いが、重複ロジックが増えてきたら**カスタムフックに切り出すべきタイミング**
+
+Reactの関数型UI設計におけるHookの役割は非常に根幹的であり、再描画、非同期、副作用などの扱いにおいて欠かせないツールである。
+
+</br>
+</br>
+</br>
+</br>
+</br>
+
 # 📘 LEARNED.md - Weather Map Viewer v1.5
 
 ## 🧠 今回実装・確認した内容（v1.5）

@@ -9,6 +9,21 @@ import {
 } from 'react-leaflet';
 import LocaleButton from './components/LocaleButton';
 import { fetchWeather } from "./utils/weatherUtils"; // ✅ 追加
+import { cities } from './data/cities-japan';
+import L from 'leaflet';
+
+export const userPinIcon = L.icon({
+  iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
+export const cityPinIcon = L.icon({
+  iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
 
 
 function ClickHandler({ setWeather, setPosition, weatherCache }) {
@@ -30,6 +45,20 @@ function ClickHandler({ setWeather, setPosition, weatherCache }) {
 
 
 function App() {
+  const [cityWeatherList, setCityWeatherList] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const results = [];
+      for (const city of cities) {
+        const data = await fetchWeather(city.lat, city.lon, weatherCache);
+        results.push({ ...city, data });
+      }
+      setCityWeatherList(results);
+    };
+    load();
+  }, []);
+
   const [weather, setWeather] = useState(null);
   const [position, setPosition] = useState(null);
   console.log("🧪 現在の position:", position);
@@ -80,14 +109,38 @@ function App() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
         />
+
+        {cityWeatherList.map((city) => (
+          <Marker key={city.name}
+            position={[city.lat, city.lon]}
+            icon={cityPinIcon}>
+            <Popup offset={[0, -30]}>
+              <strong>{city.name}</strong><br />
+              <img
+                src={`https://openweathermap.org/img/wn/${city.data.weather[0].icon}@2x.png`}
+                alt={city.data.weather[0].description}
+                style={{ width: '60px', height: '60px' }}
+              /><br />
+              {city.data.weather[0].main} ({city.data.weather[0].description})<br />
+              🌡 {city.data.main.temp}°C<br />
+              💧 {city.data.main.humidity}%<br />
+              🌬 {city.data.wind.speed} m/s
+            </Popup>
+          </Marker>
+        ))}
+
         <ClickHandler
           setWeather={setWeather}
           setPosition={setPosition}
           weatherCache={weatherCache}
         />
         {position && weather && (
-          <Marker position={position} ref={markerRef}>
-            <Popup>
+          <Marker
+            position={position}
+            ref={markerRef}
+            icon={userPinIcon}
+          >
+            <Popup offset={[0, -30]}>
               <div style={{ textAlign: 'center' }}>
                 <strong>{weather.name || 'Unknown'}</strong><br />
                 <img
