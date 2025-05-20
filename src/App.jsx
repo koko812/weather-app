@@ -59,6 +59,7 @@ function App() {
     load();
   }, []);
 
+
   const [weather, setWeather] = useState(null);
   const [position, setPosition] = useState(null);
   console.log("🧪 現在の position:", position);
@@ -69,6 +70,8 @@ function App() {
 
   const markerRef = useRef(null);
   const weatherCache = useRef(new Map()); // ✅ 1. キャッシュ作成
+
+
 
   useEffect(() => {
     const saved = localStorage.getItem("weatherCache");
@@ -81,6 +84,8 @@ function App() {
       }
     }
   }, []);
+
+
 
   useEffect(() => {
     if (position && weather && markerRef.current) {
