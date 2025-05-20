@@ -11,6 +11,15 @@ import { cities } from './data/cities-japan';
 import CityWeatherMarkers from './components/CityWeatherMarkers';
 import UserMarker from './components/UserMarker';
 import { useMemo } from 'react';
+import LayerTogglePanel from './components/LayerTogglePanel';
+import { LayersControl } from 'react-leaflet'; // ✅
+import HeatmapSelector from './components/HeatmapSelector';
+import LegendPanel from './components/LegendPanel';
+import HeatmapLayers from './components/HeatmapLayers';
+
+
+
+
 
 
 
@@ -39,13 +48,31 @@ function ZoomWatcher({ setZoom }) {
   return null;
 }
 
+const opacityByLayer = {
+  temp: 0.5,
+  clouds_new: 0.6,  // ← 濃くする
+  wind_new: 0.9,
+  precipitation_new: 0.7
+};
+
 
 function App() {
+  const API_KEY = import.meta.env.VITE_OWM_API_KEY; // ✅ ここに移動
+
   const [cityWeatherList, setCityWeatherList] = useState([]);
   const [weather, setWeather] = useState(null);
   const [position, setPosition] = useState(null);
   const [cacheReady, setCacheReady] = useState(false);
   const [zoom, setZoom] = useState(2);
+  const [selectedLayer, setSelectedLayer] = useState('none');
+
+
+
+  const getBaseMapUrl = (layer) => {
+    return layer === 'clouds_new'
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png"
+  };
 
 
   const mapRef = useRef(null);
@@ -53,6 +80,8 @@ function App() {
   const weatherCache = useRef(new Map());
 
   const CACHE_VERSION = 2;
+
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   // ✅ キャッシュ復元処理
   useEffect(() => {
@@ -127,11 +156,17 @@ function App() {
           ref={mapRef}
         >
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap contributors'
+            url={getBaseMapUrl(selectedLayer)}
+            attribution="&copy; CARTO"
+            zIndex={0}
           />
 
+          <LegendPanel selectedLayer={selectedLayer} />
+
           <ZoomWatcher setZoom={setZoom} /> {/* ← これも忘れず */}
+
+          <HeatmapLayers selectedLayer={selectedLayer} apiKey={import.meta.env.VITE_OWM_API_KEY} />
+
 
           <CityWeatherMarkers
             weatherCache={weatherCache}
@@ -162,6 +197,10 @@ function App() {
         setPosition={setPosition}
         setWeather={setWeather}
         weatherCache={weatherCache}
+      />
+      <HeatmapSelector
+        selectedLayer={selectedLayer}
+        setSelectedLayer={setSelectedLayer}
       />
     </div>
   );
