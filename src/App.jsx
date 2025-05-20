@@ -30,12 +30,23 @@ function ClickHandler({ setWeather, setPosition }) {
 function App() {
   const [weather, setWeather] = useState(null);
   const [position, setPosition] = useState(null);
+  console.log("🧪 現在の position:", position);
+  console.log("🧪 現在の weather:", weather);
 
   const mapRef = useRef(null);
+  console.log('🔁 コンポーネント関数が実行されました');
+
   const markerRef = useRef(null);
+  useEffect(() => {
+    console.log('✅ useEffect が実行されました');
+  }, []);
+
 
   useEffect(() => {
     if (position && weather && markerRef.current) {
+      console.log('📍 markerRef.current:', markerRef.current);
+
+
       // 遅延させることで DOM 確実に描画されたあとに openPopup を呼べる
       const timeout = setTimeout(() => {
         markerRef.current.openPopup();

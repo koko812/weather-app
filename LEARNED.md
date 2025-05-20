@@ -1,3 +1,84 @@
+# 📘 LEARNED.md - Weather Map Viewer v1.4.1
+
+## 🧠 今回確認した内容の詳細まとめ（v1.4.1）
+
+React-Leaflet v5 において、地図上にピンを立てた際に**天気情報を自動で表示（ポップアップ表示）するまでの流れと、その背景にある技術的要点**について理解を深めた。
+
+---
+
+## ✅ 確認した挙動とログ観察結果
+
+* `useRef` によって `<Marker>` の背後にある **Leaflet の `L.Marker` インスタンス** を取得していた
+* `useEffect(() => ..., [position, weather])` によって、**position, weather がそろったとき**に `openPopup()` を実行
+* ログにより React の描画と状態変化のタイミングが明確に可視化された：
+
+  * `App()` 関数が複数回再実行されている（`setState` によるレンダリング）
+  * `markerRef.current` に `L.Marker` が入るのは描画完了後
+  * `setTimeout(..., 0)` を使って、確実に DOM 構築後に `openPopup()` を実行
+
+---
+
+## 🎓 技術的理解ポイント
+
+### 1. `useRef` と `ref={markerRef}` の役割
+
+* `useRef(null)` によって空の箱を用意（`current` に後から値が入る）
+* `<Marker ref={markerRef}>` により、描画後 `markerRef.current` に `L.Marker` インスタンスが格納される
+* これにより、React の外の DOM/Leaflet オブジェクトにアクセス可能
+
+### 2. `Popup` は自動では開かない
+
+* `<Popup>...</Popup>` を書いただけでは、あくまで `bindPopup()` 相当の関連付けしかされない
+* **表示をトリガーするには `openPopup()` を明示的に呼ぶ必要がある**
+
+### 3. `useEffect` と `setTimeout` の組み合わせが重要
+
+* `useEffect` は描画**後**に呼ばれるが、**その時点で `ref.current` がまだ null の場合がある**（特に外部ライブラリ）
+* `setTimeout(..., 0)` によって、React の描画と Leaflet の初期化が完全に終わったタイミングに処理をずらせる
+
+---
+
+## 🔄 React-Leaflet v5 での構文変更と注意点
+
+| 機能            | v4 以前                        | v5 以降                     |
+| ------------- | ---------------------------- | ------------------------- |
+| map インスタンスの取得 | `whenCreated={(map) => ...}` | `ref={mapRef}` を使う        |
+| Popup の自動表示   | `<Popup autoOpen />`（非推奨）    | `ref` + `openPopup()` で制御 |
+| DOM 制御の前提     | 暗黙的な初期化が多い                   | 明示的な副作用制御が必要              |
+
+---
+
+## 🔧 知識の確認ログ（一部）
+
+```bash
+🧪 現在の position: null
+🧪 現在の weather: null
+🔁 コンポーネント関数が実行されました
+🚡 markerRef.current: NewClass {...} // Leaflet Marker instance
+```
+
+---
+
+## 🎯 要点のまとめ
+
+* `useRef` は React の再描画とは独立して値を保持できる "非UI状態のメモ帳"
+* `ref={...}` を使って React コンポーネントから DOM/Leaflet インスタンスを取得する
+* `Popup` を自動で開くには `markerRef.current.openPopup()` が必要
+* React-Leaflet v5 では `whenCreated` は廃止 → `ref` で操作すべき
+* `useEffect` は描画後に実行されるが、外部ライブラリとの整合性をとるには `setTimeout(..., 0)` が有効
+
+---
+
+## 📆 バージョン履歴（追記）
+
+* v1.4.1: Popup 表示制御における useRef, useEffect, setTimeout の連携と Leaflet のインスタンス理解を確認
+
+</br>
+</br>
+</br>
+</br>
+</br>
+
 # 📘 LEARNED.md - Weather Map Viewer v1.4
 
 ## 🧠 今回実装した内容（v1.4）
