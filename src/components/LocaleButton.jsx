@@ -1,7 +1,9 @@
-const API_KEY = import.meta.env.VITE_OWM_API_KEY;
+import { useEffect } from "react";
+import { fetchWeather } from "../utils/weatherUtils"; // パスは適宜調整
 
 
-function LocaleButton({ mapRef, setPosition, setWeather }) {
+
+function LocaleButton({ mapRef, setPosition, setWeather, weatherCache }) {
     const handleClick = () => {
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
@@ -10,16 +12,13 @@ function LocaleButton({ mapRef, setPosition, setWeather }) {
 
                 const map = mapRef.current;
                 if (map) {
-                    map.flyTo([lat, lon], 14, { duration: 1.0 }); // ✅ ふわっと中心へ
+                    map.flyTo([lat, lon], 14, { duration: 1.0 });
                 }
 
                 setPosition([lat, lon]);
 
                 try {
-                    const res = await fetch(
-                        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`
-                    );
-                    const data = await res.json();
+                    const data = await fetchWeather(lat, lon, weatherCache);
                     setWeather(data);
                 } catch (err) {
                     console.error("天気取得失敗:", err);
@@ -35,16 +34,16 @@ function LocaleButton({ mapRef, setPosition, setWeather }) {
         <button
             onClick={handleClick}
             style={{
-                position: 'absolute',
-                top: '20px',
-                right: '20px',
+                position: "absolute",
+                top: "20px",
+                right: "20px",
                 zIndex: 100000,
-                backgroundColor: 'yellow',
-                color: 'black',
-                padding: '10px 14px',
-                fontWeight: 'bold',
-                boxShadow: '0 0 8px rgba(0,0,0,0.5)',
-                cursor: 'pointer'
+                backgroundColor: "yellow",
+                color: "black",
+                padding: "10px 14px",
+                fontWeight: "bold",
+                boxShadow: "0 0 8px rgba(0,0,0,0.5)",
+                cursor: "pointer"
             }}
         >
             📍 現在地

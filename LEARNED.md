@@ -1,3 +1,117 @@
+# 📘 LEARNED.md - Weather Map Viewer v1.5
+
+## 🧠 今回実装・確認した内容（v1.5）
+
+天気APIの呼び出しを最適化し、ブラウザをリロードしても即座に天気が表示できるよう、**キャッシュの永続化（localStorage）対応**を行った。また、キャッシュの有効期限や取得履歴の構造化についても議論を行った。
+
+---
+
+## ✅ 実装内容と技術的変更点
+
+### 1. `fetchWeather()` 関数の導入と共通化
+
+* 天気情報の取得処理を `fetchWeather(lat, lon, weatherCache)` に一本化
+* API リクエストを行う前に、`weatherCache.current` を参照してキャッシュを確認
+* `weatherCache` は `useRef(new Map())` で管理され、React の再レンダリングと独立
+* キャッシュミス時には OpenWeatherMap API からデータを取得し、キャッシュに格納
+
+### 2. `localStorage` によるキャッシュの永続化
+
+* `weatherCache` の内容を `Array.from(map.entries())` を使ってJSON化し、`localStorage` に保存
+* 起動時に `useEffect(() => {...}, [])` で `localStorage.getItem("weatherCache")` を読み込み、`weatherCache.current` に復元
+* JSON.parse + Map再構築のパターンに注意
+
+### 3. `LocaleButton` および `ClickHandler` の改修
+
+* それぞれで直接 `fetch(...)` を使っていた箇所を `fetchWeather()` に書き換え
+* `weatherCache` を `App` から `props` 経由で受け渡し
+* 共通のロジックによって重複コードを解消し、バグ発生リスクを低減
+
+---
+
+## 🎓 学びと設計のポイント
+
+### useRef vs useState
+
+* `weatherCache` のように UI に反映させないが長期間保持したいデータには `useRef` を使用
+* `useRef` は再レンダリングを発生させず、状態が変わっても UI が不要に再描画されない
+* 一方 `weather` は表示に直結するため `useState` で管理する（再描画トリガー）
+
+### localStorage のアクセスタイミング
+
+* `App()` 関数内で `localStorage.getItem(...)` を直接呼ぶのは NG → 毎レンダリングで実行されるため
+* 代わりに `useEffect(() => {...}, [])` により、**初回マウント時に1回だけ読み込む**のが正解
+
+### fetchWeather の設計
+
+* 副作用を伴う処理は App の外部に切り出し、UIとビジネスロジックの分離を実現
+* コンポーネントから `weatherCache` を渡すことで再利用性を高め、拡張もしやすい
+
+### ログによるキャッシュ確認
+
+* `fetchWeather()` に `requestCount` と `cacheHitCount` を導入し、キャッシュの効果を可視化
+* ブラウザコンソールから `printCacheStats()` を呼び出すことで、命中率や呼び出し数を確認できるようにした
+
+### useRef の `.current` についての理解
+
+* `useRef()` は `{ current: 初期値 }` の形でオブジェクトを返す
+* `.current` を通じて値を保持し続ける（再レンダリングでも変わらない）
+* `markerRef.current` や `weatherCache.current` のように、DOM要素やインスタンス、非UIの状態を保持するのに適している
+* `useRef` は UI に関係しない「メモ帳」「キャッシュ」「外部APIオブジェクト」などに向いている
+
+| 用途         | 例                               | 説明                 |
+| ---------- | ------------------------------- | ------------------ |
+| DOMアクセス    | `divRef.current.focus()`        | HTML要素にアクセスしたいとき   |
+| 外部ライブラリの操作 | `markerRef.current.openPopup()` | Leafletなどのインスタンス操作 |
+| 状態キャッシュ    | `weatherCache.current.set(...)` | 表示に関係ない長期データの保持    |
+
+---
+
+## ⏲ 今後の拡張に向けた考察
+
+### 1. キャッシュの有効期限（TTL）
+
+* `timestamp` を一緒に保存し、一定時間（例：1時間）を過ぎたキャッシュは再取得する
+* `fetchWeather()` 内部で `Date.now() - cached.timestamp < TTL` をチェック
+
+### 2. 取得履歴の記録
+
+* `weatherHistory` を `useRef([])` で保持し、天気データ取得時に `lat, lon, timestamp, location, temp` を保存
+* `localStorage` にも保存し、次回起動時に復元可能
+* 将来的にはテーブル表示やCSVエクスポートにも拡張可能
+
+### 3. データベース化の検討
+
+* キャッシュや履歴データが複雑化した場合には、localStorage の構造化限界を超える
+* IndexedDB や SQLite、Supabase などのクライアントDBを導入すると、検索性や拡張性が高まる
+* 小規模なら localStorage + Map / Array の構成で十分だが、数千件を超えるならDBを検討
+
+---
+
+## 🌐 ユースケースの拡張案
+
+| 拡張内容         | 説明                                           |
+| ------------ | -------------------------------------------- |
+| 🧰 キャッシュ削除   | 明示的な「全消去」ボタン（`localStorage.removeItem(...)`） |
+| ⏰ キャッシュの期限管理 | 古いデータを `fetchWeather()` 内で破棄または上書き           |
+| 📊 履歴の一覧表示   | 緯度・経度・地名・気温を画面にテーブル表示                        |
+| 💪 API制限回避対応 | キャッシュによって同一地点の連続アクセスを回避                      |
+
+---
+
+## 📆 バージョン履歴
+
+* v1.5: fetchWeather() を導入し、キャッシュの永続化・命中判定・履歴記録の土台を整備
+
+  * useRef の `.current` の意味と用途を明確にし、DOM参照やキャッシュ用途の基礎を整理
+
+
+</br>
+</br>
+</br>
+</br>
+</br>
+
 # 📘 LEARNED.md - Weather Map Viewer v1.4.1
 
 ## 🧠 今回確認した内容の詳細まとめ（v1.4.1）

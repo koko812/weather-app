@@ -8,24 +8,26 @@ import {
   useMapEvents
 } from 'react-leaflet';
 import LocaleButton from './components/LocaleButton';
+import { fetchWeather } from "./utils/weatherUtils"; // ✅ 追加
 
-const API_KEY = import.meta.env.VITE_OWM_API_KEY;
 
-function ClickHandler({ setWeather, setPosition }) {
+function ClickHandler({ setWeather, setPosition, weatherCache }) {
   useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng;
       setPosition([lat, lng]);
 
-      const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${API_KEY}&units=metric`
-      );
-      const data = await res.json();
-      setWeather(data);
+      try {
+        const data = await fetchWeather(lat, lng, weatherCache);
+        setWeather(data);
+      } catch (err) {
+        console.error("天気取得失敗:", err);
+      }
     }
   });
   return null;
 }
+
 
 function App() {
   const [weather, setWeather] = useState(null);
@@ -37,10 +39,19 @@ function App() {
   console.log('🔁 コンポーネント関数が実行されました');
 
   const markerRef = useRef(null);
-  useEffect(() => {
-    console.log('✅ useEffect が実行されました');
-  }, []);
+  const weatherCache = useRef(new Map()); // ✅ 1. キャッシュ作成
 
+  useEffect(() => {
+    const saved = localStorage.getItem("weatherCache");
+    if (saved) {
+      try {
+        weatherCache.current = new Map(JSON.parse(saved));
+        console.log("🧠 localStorage からキャッシュ復元");
+      } catch (err) {
+        console.warn("⚠️ キャッシュ読み込み失敗:", err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (position && weather && markerRef.current) {
@@ -69,7 +80,11 @@ function App() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; OpenStreetMap contributors'
         />
-        <ClickHandler setWeather={setWeather} setPosition={setPosition} />
+        <ClickHandler
+          setWeather={setWeather}
+          setPosition={setPosition}
+          weatherCache={weatherCache}
+        />
         {position && weather && (
           <Marker position={position} ref={markerRef}>
             <Popup>
@@ -93,8 +108,8 @@ function App() {
         mapRef={mapRef}
         setPosition={setPosition}
         setWeather={setWeather}
+        weatherCache={weatherCache}
       />
-
     </div>
 
   );
