@@ -10,20 +10,8 @@ import {
 import LocaleButton from './components/LocaleButton';
 import { fetchWeather } from "./utils/weatherUtils"; // ✅ 追加
 import { cities } from './data/cities-japan';
-import L from 'leaflet';
-
-export const userPinIcon = L.icon({
-  iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/red-dot.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-});
-
-export const cityPinIcon = L.icon({
-  iconUrl: 'https://maps.gstatic.com/mapfiles/ms2/micons/blue-dot.png',
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-});
-
+import CityWeatherMarkers from './components/CityWeatherMarkers';
+import UserMarker from './components/UserMarker';
 
 
 function ClickHandler({ setWeather, setPosition, weatherCache }) {
@@ -62,11 +50,8 @@ function App() {
 
   const [weather, setWeather] = useState(null);
   const [position, setPosition] = useState(null);
-  console.log("🧪 現在の position:", position);
-  console.log("🧪 現在の weather:", weather);
 
   const mapRef = useRef(null);
-  console.log('🔁 コンポーネント関数が実行されました');
 
   const markerRef = useRef(null);
   const weatherCache = useRef(new Map()); // ✅ 1. キャッシュ作成
@@ -86,7 +71,6 @@ function App() {
   }, []);
 
 
-
   useEffect(() => {
     if (position && weather && markerRef.current) {
       console.log('📍 markerRef.current:', markerRef.current);
@@ -100,6 +84,7 @@ function App() {
       return () => clearTimeout(timeout);
     }
   }, [position, weather]);
+
 
   return (
     <div style={{ position: 'relative' }}>
@@ -115,53 +100,22 @@ function App() {
           attribution='&copy; OpenStreetMap contributors'
         />
 
-        {cityWeatherList.map((city) => (
-          <Marker key={city.name}
-            position={[city.lat, city.lon]}
-            icon={cityPinIcon}>
-            <Popup offset={[0, -30]}>
-              <strong>{city.name}</strong><br />
-              <img
-                src={`https://openweathermap.org/img/wn/${city.data.weather[0].icon}@2x.png`}
-                alt={city.data.weather[0].description}
-                style={{ width: '60px', height: '60px' }}
-              /><br />
-              {city.data.weather[0].main} ({city.data.weather[0].description})<br />
-              🌡 {city.data.main.temp}°C<br />
-              💧 {city.data.main.humidity}%<br />
-              🌬 {city.data.wind.speed} m/s
-            </Popup>
-          </Marker>
-        ))}
-
+        <CityWeatherMarkers weatherCache={weatherCache} />
         <ClickHandler
           setWeather={setWeather}
           setPosition={setPosition}
           weatherCache={weatherCache}
         />
-        {position && weather && (
-          <Marker
-            position={position}
-            ref={markerRef}
-            icon={userPinIcon}
-          >
-            <Popup offset={[0, -30]}>
-              <div style={{ textAlign: 'center' }}>
-                <strong>{weather.name || 'Unknown'}</strong><br />
-                <img
-                  src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}@2x.png`}
-                  alt={weather.weather[0].description}
-                  style={{ width: '60px', height: '60px' }}
-                /><br />
-                {weather.weather[0].main} - {weather.weather[0].description}<br />
-                🌡 {weather.main.temp}°C<br />
-                💧 {weather.main.humidity}%<br />
-                🌬 {weather.wind.speed} m/s
-              </div>
-            </Popup>
-          </Marker>
-        )}
+
+        <UserMarker
+          position={position}
+          weather={weather}
+          markerRef={markerRef}
+          mapRef={mapRef} // 使ってなければ省略してOK
+        />
+
       </MapContainer>
+
       <LocaleButton
         mapRef={mapRef}
         setPosition={setPosition}

@@ -1,3 +1,141 @@
+# 📘 LEARNED.md - Weather Map Viewer v1.6.3
+
+## 🧠 今回実装・設計した内容（v1.6.3）
+
+### ✅ `UserMarker` コンポーネントの岐務分離
+
+* ユーザーがクリックまたは現在地ボタンで指定した地点にピンを立てる処理を `UserMarker.jsx` に分離
+* これにより `App.jsx` から `<Marker>` や `<Popup>` の UI コードを完全に排除
+* ピンが立った直後に `openPopup()` を呼ぶ `useEffect` も `UserMarker` 側に移した
+* `position`, `weather`, `markerRef` を props で受け受け取り、描画のみに集中した構成
+
+```jsx
+<UserMarker
+  position={position}
+  weather={weather}
+  markerRef={markerRef}
+  mapRef={mapRef} // 使用しない場合は省略可能
+/>
+```
+
+---
+
+### 🧩 App.jsx の状態（整理完了）
+
+`App.jsx` は状態の管理と地図コンテナの配置のみに岐務が限定された。
+
+`MapContainer` 内は以下のように簡潔に構成：
+
+```jsx
+<MapContainer>
+  <TileLayer ... />
+  <CityWeatherMarkers weatherCache={weatherCache} />
+  <ClickHandler ... />
+  <UserMarker ... />
+</MapContainer>
+```
+
+App は状態は (`weather`, `position`, `markerRef`, `weatherCache`) を保持するだけで、描画ロジックを持たない設計に。
+
+---
+
+### 🔍 ClickHandler の設計意図と保留
+
+* `ClickHandler` は `useMapEvents()` を使ってクリックイベントを検知し、緯度縦度から天気を取得してピンを立てる
+* 現在は簡潔かつ一目的な処理のため、`App.jsx` 内に留め置いている
+* 将来的に `zoom`, `moveend` などのイベントを扱うようになれば `ClickHandler.jsx` に分離を検討
+
+---
+
+### 💡 設計改善の評価と今後の検討
+
+| 改善内容               | 効果                                 |
+| ------------------ | ---------------------------------- |
+| `UserMarker` の岐務分離 | UIと状態管理の明確な分離、再利用しやすい構造            |
+| `App.jsx` の簡約化     | 保守性・可読性が向上、各部の独立性が高まった             |
+| `Popup` 表示ロジックの集縮  | `openPopup` の制御も `UserMarker` 側に統一 |
+
+---
+
+### 📆 バージョン履歴補足
+
+* **v1.6.2**: `useCityWeather` による都市天気取得のロジック分離（カスタムフック化）
+* **v1.6.3**: `UserMarker` の分離と `App.jsx` の構造整理、`ClickHandler` の役割明確化
+
+---
+
+### 🔄 次の候補ステップ（v1.6.4 または v1.7 以降）
+
+* `ClickHandler.jsx` のファイル分離
+* `<Popup>` 内の UI 部品を `WeatherPopup.jsx` に共通化
+* `useWeatherCache()` のようなキャッシュ初期化フックの検討
+* 地図の移動・ズームに応じて都市を切り替えるダイナミック描画への移行（v1.7）
+
+---
+
+
+
+# 📘 LEARNED.md - Weather Map Viewer v1.6.2
+
+## 🧠 今回実装・設計した内容（v1.6.2）
+
+### ✅ `useCityWeather`：天気取得ロジックのカスタムフック化
+
+- 都市ごとの天気取得処理を `useCityWeather()` に抽出
+- `CityWeatherMarkers.jsx` 内から `useState` / `useEffect` を完全に削除
+- 表示とロジックの責務分離により、**再利用性と可読性が大幅に向上**
+- キャッシュ（`weatherCache`）は引き続き `App.jsx` からフックに引数として受け渡し
+
+---
+
+## 🧩 構成の変化
+
+| コンポーネント / フック        | 主な役割                             |
+|-------------------------------|--------------------------------------|
+| `App.jsx`                    | キャッシュ保持・全体構成             |
+| `CityWeatherMarkers.jsx`     | 都市ごとの `<Marker>` 表示だけを担当 |
+| `useCityWeather.js`          | 都市天気取得ロジック全般             |
+| `weatherUtils.js`            | fetch + キャッシュ + localStorage    |
+
+---
+
+## 💡 カスタムフック導入のメリット
+
+| Before（v1.6）                                  | After（v1.6.2）                          |
+|-------------------------------------------------|------------------------------------------|
+| useEffect + ループがコンポーネント内に直書き   | `useCityWeather()` により完全分離        |
+| 状態管理と UI 表示が混ざっていた               | 表示だけのシンプルなコンポーネントに     |
+| `App.jsx` の責務が重い                          | ロジックを別ファイルに移して整理されている |
+
+---
+
+## 🛠 今後の設計改善方針
+
+### 1. `UserMarker.jsx` のコンポーネント化
+- ユーザーのクリックまたは現在地表示を扱うロジックも分離する
+- `position`, `weather`, `markerRef` を props として渡す
+
+### 2. 共通スタイルやロジックの統一
+- `<Popup>` 内の UI 部分を `WeatherPopup.jsx` として切り出し可
+- 複数箇所で再利用される構成になる可能性
+
+### 3. ロジックと UI の役割を今後も明確に
+- 「APIを叩く/キャッシュする」はフック or ユーティリティ
+- 「表示する」は純粋な JSX のみで完結するように意識する
+
+---
+
+## 📆 バージョン履歴補足
+
+- **v1.6**: 都市マーカーの導入、マーカー種別アイコン切り替え、表示UI
+- **v1.6.2**: 都市天気取得ロジックをカスタムフック化し、ロジックと描画の責務を明確に分離
+
+</br>
+</br>
+</br>
+</br>
+</br>
+
 # 📘 LEARNED.md - Weather Map Viewer v1.6
 
 ## 🌏 実装内容（日本の都市の天気表示）
